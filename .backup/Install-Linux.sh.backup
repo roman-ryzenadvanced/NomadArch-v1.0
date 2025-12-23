@@ -1,0 +1,312 @@
+#!/bin/bash
+
+echo ""
+echo "  ███╗   ██╗ ██████╗ ███╗   ███╗ █████╗ ██████╗  █████╗ ██████╗  ██████╗██╗  ██╗"
+echo "  ████╗  ██║██╔═══██╗████╗ ████║██╔══██╗██╔══██╗██╔══██╗██╔════╝██║  ██║"
+echo "  ██╔██╗ ██║██║   ██║██╔████╔██║███████║██║  ██║███████║██████╔╝██║     ███████║"
+echo "  ██║╚██╗██║██║   ██║██║╚██╔╝██║██╔══██║██║  ██║██╔══██║██╔══██╗██║     ██╔══██║"
+echo "  ██║ ╚████║╚██████╔╝██║ ╚═╝ ██║██║  ██║██████╔╝██║  ██║██║  ██║╚██████╗██║  ██║"
+echo "  ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝"
+echo ""
+echo "  INSTALLER - Enhanced with Auto-Dependency Resolution"
+echo "  ═════════════════════════════════════════════════════════════════════════════"
+echo ""
+
+ERRORS=0
+WARNINGS=0
+
+cd "$(dirname "$0")"
+
+echo "[STEP 1/6] Detecting Linux Distribution..."
+echo ""
+
+# Detect Linux distribution
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    DISTRO=$ID
+    DISTRO_VERSION=$VERSION_ID
+    echo "[OK] Detected: $PRETTY_NAME"
+else
+    echo "[WARN] Could not detect specific distribution"
+    DISTRO="unknown"
+    WARNINGS=$((WARNINGS + 1))
+fi
+
+echo ""
+echo "[STEP 2/6] Checking System Requirements..."
+echo ""
+
+# Check for Node.js
+echo "[INFO] Checking Node.js..."
+if ! command -v node &> /dev/null; then
+    echo "[ERROR] Node.js not found!"
+    echo ""
+    echo "NomadArch requires Node.js to run."
+    echo ""
+    echo "Install using your package manager:"
+    if [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "debian" ]; then
+        echo "  sudo apt update && sudo apt install -y nodejs npm"
+    elif [ "$DISTRO" = "fedora" ]; then
+        echo "  sudo dnf install -y nodejs npm"
+    elif [ "$DISTRO" = "arch" ] || [ "$DISTRO" = "manjaro" ]; then
+        echo "  sudo pacman -S nodejs npm"
+    elif [ "$DISTRO" = "opensuse-leap" ] || [ "$DISTRO" = "opensuse-tumbleweed" ]; then
+        echo "  sudo zypper install -y nodejs npm"
+    else
+        echo "  Visit https://nodejs.org/ for installation instructions"
+    fi
+    echo ""
+    echo "Or install Node.js using NVM (Node Version Manager):"
+    echo "  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash"
+    echo "  source ~/.bashrc"
+    echo "  nvm install 20"
+    echo ""
+    exit 1
+fi
+NODE_VERSION=$(node --version)
+echo "[OK] Node.js detected: $NODE_VERSION"
+
+# Check Node.js version (require 18+)
+NODE_MAJOR=$(echo $NODE_VERSION | cut -d. -f1 | sed 's/v//')
+if [ "$NODE_MAJOR" -lt 18 ]; then
+    echo "[WARN] Node.js version is too old (found v$NODE_VERSION, required 18+)"
+    echo "[INFO] Please update Node.js"
+    WARNINGS=$((WARNINGS + 1))
+fi
+
+# Check for npm
+echo "[INFO] Checking npm..."
+if ! command -v npm &> /dev/null; then
+    echo "[ERROR] npm not found! This should come with Node.js."
+    echo "Please reinstall Node.js"
+    ERRORS=$((ERRORS + 1))
+fi
+NPM_VERSION=$(npm --version)
+echo "[OK] npm detected: $NPM_VERSION"
+
+# Check for build-essential (required for native modules)
+echo "[INFO] Checking build tools..."
+if ! command -v make &> /dev/null || ! command -v gcc &> /dev/null || ! command -v g++ &> /dev/null; then
+    echo "[WARN] Build tools not found (gcc, g++, make)"
+    echo "[INFO] Installing build-essential..."
+    if [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "debian" ]; then
+        sudo apt update && sudo apt install -y build-essential
+    elif [ "$DISTRO" = "fedora" ]; then
+        sudo dnf install -y gcc g++ make
+    elif [ "$DISTRO" = "arch" ] || [ "$DISTRO" = "manjaro" ]; then
+        sudo pacman -S --noconfirm base-devel
+    elif [ "$DISTRO" = "opensuse-leap" ] || [ "$DISTRO" = "opensuse-tumbleweed" ]; then
+        sudo zypper install -y gcc-c++ make
+    else
+        echo "[WARN] Could not auto-install build tools. Please install manually."
+        WARNINGS=$((WARNINGS + 1))
+    fi
+else
+    echo "[OK] Build tools detected"
+fi
+
+# Check for Git (optional but recommended)
+echo "[INFO] Checking Git..."
+if ! command -v git &> /dev/null; then
+    echo "[WARN] Git not found (optional but recommended)"
+    echo "[INFO] Install: sudo apt install git (or equivalent for your distro)"
+    WARNINGS=$((WARNINGS + 1))
+else
+    GIT_VERSION=$(git --version)
+    echo "[OK] Git detected: $GIT_VERSION"
+fi
+
+# Check for Python (optional, for some tools)
+echo "[INFO] Checking Python..."
+if command -v python3 &> /dev/null; then
+    PY_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+    echo "[OK] Python3 detected: $PY_VERSION"
+elif command -v python &> /dev/null; then
+    PY_VERSION=$(python --version 2>&1 | awk '{print $2}')
+    echo "[OK] Python detected: $PY_VERSION"
+else
+    echo "[WARN] Python not found (optional, required for some build tools)"
+    WARNINGS=$((WARNINGS + 1))
+fi
+
+# Check disk space (at least 2GB free)
+FREE_SPACE=$(df -BG "$PWD" | tail -1 | awk '{print int($4/1024/1024)}')
+if [ "$FREE_SPACE" -lt 2048 ]; then
+    echo "[WARN] Low disk space ($FREE_SPACE MB free, recommended 2GB+)"
+    WARNINGS=$((WARNINGS + 1))
+else
+    echo "[OK] Disk space: $FREE_SPACE MB free"
+fi
+
+echo ""
+echo "[STEP 3/7] Downloading OpenCode Binary..."
+echo ""
+
+if [ ! -d "bin" ]; then
+    mkdir bin
+fi
+
+if [ ! -f "bin/opencode" ]; then
+    echo "[SETUP] Downloading opencode binary from GitHub releases..."
+    echo "[INFO] This is required for workspace functionality."
+
+    # Detect architecture
+    ARCH=$(uname -m)
+    if [ "$ARCH" = "x86_64" ]; then
+        FILENAME="opencode-linux"
+    elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+        FILENAME="opencode-linux-arm64"
+    else
+        echo "[WARN] Unsupported architecture: $ARCH"
+        echo "[INFO] Please download opencode manually from: https://opencode.ai/"
+        WARNINGS=$((WARNINGS + 1))
+        FILENAME=""
+    fi
+
+    if [ -n "$FILENAME" ]; then
+        curl -L -o "bin/opencode" "https://github.com/NeuralNomadsAI/NomadArch/releases/latest/download/$FILENAME"
+        if [ $? -ne 0 ]; then
+            echo "[WARN] Failed to download opencode automatically."
+            echo "[INFO] You can install OpenCode CLI manually from: https://opencode.ai/"
+            echo "[INFO] Or download opencode and place it in bin/ folder"
+            echo "[INFO] Without opencode, workspace creation will fail."
+            WARNINGS=$((WARNINGS + 1))
+        else
+            chmod +x bin/opencode
+            echo "[OK] opencode downloaded successfully"
+        fi
+    fi
+else
+    echo "[OK] opencode already exists"
+fi
+
+echo ""
+echo "[STEP 5/7] Setting Permissions..."
+echo ""
+
+# Make scripts executable
+chmod +x Launch-Unix.sh 2>/dev/null
+chmod +x Install-Linux.sh 2>/dev/null
+chmod +x Install-Mac.sh 2>/dev/null
+
+echo "[OK] Scripts permissions set"
+
+echo ""
+echo "[STEP 6/7] Cleaning Previous Installation..."
+echo ""
+
+if [ -d "node_modules" ]; then
+    echo "[INFO] Found existing node_modules, cleaning..."
+    rm -rf node_modules
+    echo "[OK] Cleaned previous installation artifacts"
+else
+    echo "[OK] No previous installation found"
+fi
+
+echo ""
+echo "[STEP 7/7] Installing Dependencies..."
+echo ""
+echo "This may take 3-10 minutes depending on your internet speed."
+echo "Please be patient and do not close this terminal."
+echo ""
+
+npm install
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "[ERROR] npm install failed!"
+    echo ""
+    echo "Common solutions:"
+    echo "  1. Check your internet connection"
+    echo "  2. Try running with sudo if permission errors occur"
+    echo "  3. Clear npm cache: npm cache clean --force"
+    echo "  4. Delete node_modules and try again"
+    echo ""
+    echo "Attempting to clear npm cache and retry..."
+    npm cache clean --force
+    echo "Retrying installation..."
+    npm install
+    if [ $? -ne 0 ]; then
+        echo "[ERROR] Installation failed after retry."
+        ERRORS=$((ERRORS + 1))
+    fi
+else
+    echo "[OK] Dependencies installed successfully"
+fi
+
+echo ""
+echo "[STEP 6/6] Building NomadArch..."
+echo ""
+echo "This may take 2-5 minutes depending on your system."
+echo ""
+
+npm run build
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "[ERROR] Build failed!"
+    echo ""
+    echo "Common solutions:"
+    echo "  1. Check that Node.js version is 18+ (node --version)"
+    echo "  2. Clear npm cache: npm cache clean --force"
+    echo "  3. Delete node_modules and reinstall: rm -rf node_modules && npm install"
+    echo "  4. Check for missing system dependencies (build-essential)"
+    echo "  5. Check error messages above for specific issues"
+    echo ""
+    ERRORS=$((ERRORS + 1))
+else
+    echo "[OK] Build completed successfully"
+fi
+
+echo ""
+echo "Verifying Installation"
+echo ""
+
+# Check if opencode binary exists
+if [ ! -f "bin/opencode" ]; then
+    echo "[WARN] opencode binary not found. Workspace creation will fail."
+    echo "[INFO] Download from: https://github.com/NeuralNomadsAI/NomadArch/releases/latest/download/opencode-linux"
+    echo "[INFO] Or install OpenCode CLI from: https://opencode.ai/"
+    WARNINGS=$((WARNINGS + 1))
+else
+    echo "[OK] opencode binary verified"
+fi
+
+echo ""
+echo "Installation Summary"
+echo ""
+
+if [ $ERRORS -gt 0 ]; then
+    echo ""
+    echo "════════════════════════════════════════════════════════════════════════════"
+    echo "[FAILED] Installation encountered $ERRORS error(s)!"
+    echo ""
+    echo "Please review error messages above and try again."
+    echo "For help, see: https://github.com/NeuralNomadsAI/NomadArch/issues"
+    echo "════════════════════════════════════════════════════════════════════════════"
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "════════════════════════════════════════════════════════════════════════════"
+echo "[SUCCESS] Installation Complete!"
+echo ""
+
+if [ $WARNINGS -gt 0 ]; then
+    echo "[WARN] There were $WARNINGS warning(s) during installation."
+    echo "Review warnings above. Most warnings are non-critical."
+    echo ""
+fi
+
+echo "You can now run NomadArch using:"
+echo "  ./Launch-Unix.sh"
+echo ""
+echo "For help and documentation, see: README.md"
+echo "For troubleshooting, see: TROUBLESHOOTING.md"
+echo "════════════════════════════════════════════════════════════════════════════"
+echo ""
+echo "Press Enter to start NomadArch now, or Ctrl+C to start later..."
+read
+
+echo ""
+echo "[INFO] Starting NomadArch..."
+./Launch-Unix.sh

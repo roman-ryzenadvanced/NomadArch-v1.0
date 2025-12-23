@@ -1,0 +1,349 @@
+#!/bin/bash
+
+echo ""
+echo "  ███╗   ██╗ ██████╗ ███╗   ███╗ █████╗ ██████╗  █████╗ ██████╗  ██████╗██╗  ██╗"
+echo "  ████╗  ██║██╔═══██╗████╗ ████║██╔══██╗██╔══██╗██╔══██╗██╔════╝██║  ██║"
+echo "  ██╔██╗ ██║██║   ██║██╔████╔██║███████║██║  ██║███████║██████╔╝██║     ███████║"
+echo "  ██║╚██╗██║██║   ██║██║╚██╔╝██║██╔══██║██║  ██║██╔══██║██╔══██╗██║     ██╔══██║"
+echo "  ██║ ╚████║╚██████╔╝██║ ╚═╝ ██║██║  ██║██████╔╝██║  ██║██║  ██║╚██████╗██║  ██║"
+echo "  ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝"
+echo ""
+echo "  INSTALLER - macOS Enhanced with Auto-Dependency Resolution"
+echo "  ═══════════════════════════════════════════════════════════════════════════"
+echo ""
+
+ERRORS=0
+WARNINGS=0
+
+cd "$(dirname "$0")"
+
+echo "[STEP 1/7] Checking macOS Version..."
+echo ""
+
+# Detect macOS version
+if [ -f /System/Library/CoreServices/SystemVersion.plist ]; then
+    MAC_VERSION=$(defaults read /System/Library/CoreServices/SystemVersion.plist ProductVersion)
+    MAC_MAJOR=$(echo $MAC_VERSION | cut -d. -f1)
+    echo "[OK] macOS detected: $MAC_VERSION"
+
+    # Check minimum version (macOS 11+ / Big Sur+)
+    if [ "$MAC_MAJOR" -lt 11 ]; then
+        echo "[WARN] NomadArch requires macOS 11+ (Big Sur or later)"
+        echo "[INFO] Your version is $MAC_VERSION"
+        echo "[INFO] Please upgrade macOS to continue"
+        exit 1
+    fi
+else
+    echo "[WARN] Could not detect macOS version"
+    WARNINGS=$((WARNINGS + 1))
+fi
+
+# Check for Apple Silicon
+ARCH=$(uname -m)
+if [ "$ARCH" = "arm64" ]; then
+    echo "[OK] Apple Silicon detected (M1/M2/M3 chip)"
+elif [ "$ARCH" = "x86_64" ]; then
+    echo "[OK] Intel Mac detected"
+else
+    echo "[WARN] Unknown architecture: $ARCH"
+    WARNINGS=$((WARNINGS + 1))
+fi
+
+echo ""
+echo "[STEP 2/7] Checking System Requirements..."
+echo ""
+
+# Check for Node.js
+echo "[INFO] Checking Node.js..."
+if ! command -v node &> /dev/null; then
+    echo "[ERROR] Node.js not found!"
+    echo ""
+    echo "NomadArch requires Node.js to run."
+    echo ""
+    echo "Install Node.js using one of these methods:"
+    echo ""
+    echo "  1. Homebrew (recommended):"
+    echo "     brew install node"
+    echo ""
+    echo "  2. Download from official site:"
+    echo "     Visit https://nodejs.org/"
+    echo "     Download and install the macOS installer"
+    echo ""
+    echo "  3. Using NVM (Node Version Manager):"
+    echo "     curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash"
+    echo "     source ~/.zshrc  (or ~/.bash_profile)"
+    echo "     nvm install 20"
+    echo ""
+    exit 1
+fi
+NODE_VERSION=$(node --version)
+echo "[OK] Node.js detected: $NODE_VERSION"
+
+# Check Node.js version (require 18+)
+NODE_MAJOR=$(echo $NODE_VERSION | cut -d. -f1 | sed 's/v//')
+if [ "$NODE_MAJOR" -lt 18 ]; then
+    echo "[WARN] Node.js version is too old (found v$NODE_VERSION, required 18+)"
+    echo "[INFO] Please update Node.js: brew upgrade node"
+    WARNINGS=$((WARNINGS + 1))
+fi
+
+# Check for npm
+echo "[INFO] Checking npm..."
+if ! command -v npm &> /dev/null; then
+    echo "[ERROR] npm not found! This should come with Node.js."
+    echo "Please reinstall Node.js"
+    ERRORS=$((ERRORS + 1))
+fi
+NPM_VERSION=$(npm --version)
+echo "[OK] npm detected: $NPM_VERSION"
+
+# Check for Xcode Command Line Tools (required for native modules)
+echo "[INFO] Checking Xcode Command Line Tools..."
+if ! command -v xcode-select &> /dev/null; then
+    echo "[WARN] Xcode Command Line Tools not installed"
+    echo "[INFO] Required for building native Node.js modules"
+    echo ""
+    echo "Install by running:"
+    echo "  xcode-select --install"
+    echo ""
+    echo "This will open a dialog to install the tools."
+    WARNINGS=$((WARNINGS + 1))
+else
+    XCODE_PATH=$(xcode-select -p)
+    echo "[OK] Xcode Command Line Tools detected: $XCODE_PATH"
+fi
+
+# Check for Homebrew (optional but recommended)
+echo "[INFO] Checking Homebrew..."
+if ! command -v brew &> /dev/null; then
+    echo "[WARN] Homebrew not found (optional but recommended)"
+    echo "[INFO] Install Homebrew from: https://brew.sh/"
+    echo "[INFO] Then you can install dependencies with: brew install node git"
+    WARNINGS=$((WARNINGS + 1))
+else
+    BREW_VERSION=$(brew --version | head -1)
+    echo "[OK] Homebrew detected: $BREW_VERSION"
+fi
+
+# Check for Git (optional but recommended)
+echo "[INFO] Checking Git..."
+if ! command -v git &> /dev/null; then
+    echo "[WARN] Git not found (optional but recommended)"
+    echo "[INFO] Install: brew install git"
+    WARNINGS=$((WARNINGS + 1))
+else
+    GIT_VERSION=$(git --version)
+    echo "[OK] Git detected: $GIT_VERSION"
+fi
+
+# Check disk space (at least 2GB free)
+FREE_SPACE=$(df -BG "$PWD" | tail -1 | awk '{print int($4/1024/1024)}')
+if [ "$FREE_SPACE" -lt 2048 ]; then
+    echo "[WARN] Low disk space ($FREE_SPACE MB free, recommended 2GB+)"
+    WARNINGS=$((WARNINGS + 1))
+else
+    echo "[OK] Disk space: $FREE_SPACE MB free"
+fi
+
+echo ""
+echo "[STEP 3/7] Checking Rosetta 2 (Apple Silicon)..."
+echo ""
+
+# Check if Rosetta 2 is installed on Apple Silicon
+if [ "$ARCH" = "arm64" ]; then
+    if ! /usr/bin/pgrep -q oahd; then
+        echo "[INFO] Rosetta 2 is not running"
+        echo "[INFO] Some x86_64 dependencies may need Rosetta"
+        echo ""
+        echo "Install Rosetta 2 if needed:"
+        echo "  softwareupdate --install-rosetta"
+        echo ""
+    else
+        echo "[OK] Rosetta 2 is installed and running"
+    fi
+fi
+
+echo ""
+echo "[STEP 4/7] Checking Gatekeeper Status..."
+echo ""
+
+# Check if Gatekeeper will block unsigned apps
+echo "[INFO] Gatekeeper may block unsigned applications"
+echo "[INFO] If NomadArch doesn't open, try:"
+echo "  Right-click -> Open"
+echo "  Or disable Gatekeeper (not recommended):"
+echo "  sudo spctl --master-disable"
+echo ""
+
+echo ""
+echo "[STEP 5/8] Downloading OpenCode Binary..."
+echo ""
+
+if [ ! -d "bin" ]; then
+    mkdir bin
+fi
+
+if [ ! -f "bin/opencode" ]; then
+    echo "[SETUP] Downloading opencode binary from GitHub releases..."
+    echo "[INFO] This is required for workspace functionality."
+
+    # Detect architecture
+    if [ "$ARCH" = "arm64" ]; then
+        FILENAME="opencode-macos-arm64"
+    elif [ "$ARCH" = "x86_64" ]; then
+        FILENAME="opencode-macos"
+    else
+        echo "[WARN] Unsupported architecture: $ARCH"
+        echo "[INFO] Please download opencode manually from: https://opencode.ai/"
+        WARNINGS=$((WARNINGS + 1))
+        FILENAME=""
+    fi
+
+    if [ -n "$FILENAME" ]; then
+        curl -L -o "bin/opencode" "https://github.com/NeuralNomadsAI/NomadArch/releases/latest/download/$FILENAME"
+        if [ $? -ne 0 ]; then
+            echo "[WARN] Failed to download opencode automatically."
+            echo "[INFO] You can install OpenCode CLI manually from: https://opencode.ai/"
+            echo "[INFO] Or download opencode and place it in bin/ folder"
+            echo "[INFO] Without opencode, workspace creation will fail."
+            WARNINGS=$((WARNINGS + 1))
+        else
+            chmod +x bin/opencode
+            echo "[OK] opencode downloaded successfully"
+        fi
+    fi
+else
+    echo "[OK] opencode already exists"
+fi
+
+echo ""
+echo "[STEP 6/8] Setting Permissions..."
+echo ""
+
+# Make scripts executable
+chmod +x Launch-Unix.sh 2>/dev/null
+chmod +x Install-Linux.sh 2>/dev/null
+chmod +x Install-Mac.sh 2>/dev/null
+
+echo "[OK] Scripts permissions set"
+
+echo ""
+echo "[STEP 7/8] Cleaning Previous Installation..."
+echo ""
+
+if [ -d "node_modules" ]; then
+    echo "[INFO] Found existing node_modules, cleaning..."
+    rm -rf node_modules
+    echo "[OK] Cleaned previous installation artifacts"
+else
+    echo "[OK] No previous installation found"
+fi
+
+echo ""
+echo "[STEP 8/8] Installing Dependencies..."
+echo ""
+echo "This may take 3-10 minutes depending on your internet speed."
+echo "Please be patient and do not close this terminal."
+echo ""
+
+npm install
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "[ERROR] npm install failed!"
+    echo ""
+    echo "Common solutions:"
+    echo "  1. Check your internet connection"
+    echo "  2. Try clearing npm cache: npm cache clean --force"
+    echo "  3. Delete node_modules and try again: rm -rf node_modules && npm install"
+    echo "  4. Ensure Xcode Command Line Tools are installed"
+    echo "  5. Check if Node.js version is 18+"
+    echo ""
+    echo "Attempting to clear npm cache and retry..."
+    npm cache clean --force
+    echo "Retrying installation..."
+    npm install
+    if [ $? -ne 0 ]; then
+        echo "[ERROR] Installation failed after retry."
+        ERRORS=$((ERRORS + 1))
+    fi
+else
+    echo "[OK] Dependencies installed successfully"
+fi
+
+echo ""
+echo "Building NomadArch..."
+echo ""
+echo "This may take 2-5 minutes depending on your system."
+echo ""
+
+npm run build
+if [ $? -ne 0 ]; then
+    echo ""
+    echo "[ERROR] Build failed!"
+    echo ""
+    echo "Common solutions:"
+    echo "  1. Check that Node.js version is 18+ (node --version)"
+    echo "  2. Ensure Xcode Command Line Tools are installed: xcode-select --install"
+    echo "  3. Clear npm cache: npm cache clean --force"
+    echo "  4. Delete node_modules and reinstall: rm -rf node_modules && npm install"
+    echo "  5. Check error messages above for specific issues"
+    echo ""
+    ERRORS=$((ERRORS + 1))
+else
+    echo "[OK] Build completed successfully"
+fi
+
+echo ""
+echo "Verifying Installation"
+echo ""
+
+# Check if opencode binary exists
+if [ ! -f "bin/opencode" ]; then
+    echo "[WARN] opencode binary not found. Workspace creation will fail."
+    echo "[INFO] Download from: https://github.com/NeuralNomadsAI/NomadArch/releases/latest/download/opencode-macos"
+    echo "[INFO] Or install OpenCode CLI from: https://opencode.ai/"
+    WARNINGS=$((WARNINGS + 1))
+else
+    echo "[OK] opencode binary verified"
+fi
+
+echo ""
+echo "Installation Summary"
+echo ""
+
+if [ $ERRORS -gt 0 ]; then
+    echo ""
+    echo "════════════════════════════════════════════════════════════════════════════"
+    echo "[FAILED] Installation encountered $ERRORS error(s)!"
+    echo ""
+    echo "Please review error messages above and try again."
+    echo "For help, see: https://github.com/NeuralNomadsAI/NomadArch/issues"
+    echo "════════════════════════════════════════════════════════════════════════════"
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "══════════════════════════════════════════════════════════════════════════"
+echo "[SUCCESS] Installation Complete!"
+echo ""
+
+if [ $WARNINGS -gt 0 ]; then
+    echo "[WARN] There were $WARNINGS warning(s) during installation."
+    echo "Review warnings above. Most warnings are non-critical."
+    echo ""
+fi
+
+echo "You can now run NomadArch using:"
+echo "  ./Launch-Unix.sh"
+echo ""
+echo "For help and documentation, see: README.md"
+echo "For troubleshooting, see: TROUBLESHOOTING.md"
+echo "════════════════════════════════════════════════════════════════════════════"
+echo ""
+echo "Press Enter to start NomadArch now, or Ctrl+C to start later..."
+read
+
+echo ""
+echo "[INFO] Starting NomadArch..."
+./Launch-Unix.sh
