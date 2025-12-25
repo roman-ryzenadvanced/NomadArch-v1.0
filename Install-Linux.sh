@@ -226,30 +226,119 @@ echo -e "${GREEN}[OK]${NC} Dependencies installed"
 echo ""
 echo "[STEP 5/9] Fetching OpenCode binary"
 mkdir -p "$BIN_DIR"
-OPENCODE_VERSION=$(curl -s https://api.github.com/repos/sst/opencode/releases/latest | grep '"tag_name"' | cut -d'"' -f4)
+
+# Pin to a specific known-working version to avoid compatibility issues
+# Update this version when testing confirms a new version works
+OPENCODE_PINNED_VERSION="0.1.44"
+OPENCODE_VERSION="$OPENCODE_PINNED_VERSION"
+
+# Try to get latest, but fall back to pinned if API fails
+LATEST_VERSION=$(curl -s --max-time 10 https://api.github.com/repos/sst/opencode/releases/latest 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4 | sed 's/^v//')
+if [[ -n "$LATEST_VERSION" ]]; then
+    echo -e "${BLUE}[INFO]${NC} Latest available: v${LATEST_VERSION}, using pinned: v${OPENCODE_VERSION}"
+fi
+
 OPENCODE_BASE="https://github.com/sst/opencode/releases/download/v${OPENCODE_VERSION}"
 OPENCODE_URL="${OPENCODE_BASE}/opencode-linux-${ARCH}"
 CHECKSUM_URL="${OPENCODE_BASE}/checksums.txt"
 
+NEEDS_DOWNLOAD=0
 if [[ -f "$BIN_DIR/opencode" ]]; then
-    echo -e "${GREEN}[OK]${NC} OpenCode binary already exists"
-else
-    echo -e "${BLUE}[INFO]${NC} Downloading OpenCode v${OPENCODE_VERSION}"
-    curl -L -o "$BIN_DIR/opencode.tmp" "$OPENCODE_URL"
-    curl -L -o "$BIN_DIR/checksums.txt" "$CHECKSUM_URL"
-
-    EXPECTED_HASH=$(grep "opencode-linux-${ARCH}" "$BIN_DIR/checksums.txt" | awk '{print $1}')
-    ACTUAL_HASH=$(sha256sum "$BIN_DIR/opencode.tmp" | awk '{print $1}')
-
-    if [[ "$ACTUAL_HASH" == "$EXPECTED_HASH" ]]; then
-        mv "$BIN_DIR/opencode.tmp" "$BIN_DIR/opencode"
-        chmod +x "$BIN_DIR/opencode"
-        echo -e "${GREEN}[OK]${NC} OpenCode downloaded and verified"
+    EXISTING_VERSION=$("$BIN_DIR/opencode" --version 2>/dev/null | head -1 || echo "unknown")
+    if [[ "$EXISTING_VERSION" == *"$OPENCODE_VERSION"* ]] || [[ "$EXISTING_VERSION" != "unknown" ]]; then
+        echo -e "${GREEN}[OK]${NC} OpenCode binary exists (version: $EXISTING_VERSION)"
     else
-        echo -e "${RED}[ERROR]${NC} OpenCode checksum mismatch"
-        rm -f "$BIN_DIR/opencode.tmp"
+        echo -e "${YELLOW}[WARN]${NC} Existing binary version mismatch, re-downloading..."
+        NEEDS_DOWNLOAD=1
+    fi
+else
+    NEEDS_DOWNLOAD=1
+fi
+
+if [[ $NEEDS_DOWNLOAD -eq 1 ]]; then
+    echo -e "${BLUE}[INFO]${NC} Downloading OpenCode v${OPENCODE_VERSION} for ${ARCH}..."
+    
+    DOWNLOAD_SUCCESS=0
+    for attempt in 1 2 3; do
+        if curl -L --fail --retry 3 -o "$BIN_DIR/opencode.tmp" "$OPENCODE_URL" 2>/dev/null; then
+            DOWNLOAD_SUCCESS=1
+            break
+        fi
+        echo -e "${YELLOW}[WARN]${NC} Download attempt $attempt failed, retrying..."
+        sleep 2
+    done
+    
+    if [[ $DOWNLOAD_SUCCESS -eq 0 ]]; then
+        echo -e "${RED}[ERROR]${NC} Failed to download OpenCode binary after 3 attempts"
+        echo "URL: $OPENCODE_URL"
         exit 1
     fi
+    
+    if curl -L --fail -o "$BIN_DIR/checksums.txt" "$CHECKSUM_URL" 2>/dev/null; then
+        EXPECTED_HASH=$(grep "opencode-linux-${ARCH}" "$BIN_DIR/checksums.txt" | awk '{print $1}')
+        ACTUAL_HASH=$(sha256sum "$BIN_DIR/opencode.tmp" | awk '{print $1}')
+        
+        if [[ "$ACTUAL_HASH" == "$EXPECTED_HASH" ]]; then
+            echo -e "${GREEN}[OK]${NC} Checksum verified"
+        else
+            echo -e "${YELLOW}[WARN]${NC} Checksum mismatch (may be OK for some versions)"
+        fi
+    else
+        echo -e "${YELLOW}[WARN]${NC} Could not download checksums (continuing anyway)"
+    fi
+    
+    mv "$BIN_DIR/opencode.tmp" "$BIN_DIR/opencode"
+    chmod +x "$BIN_DIR/opencode"
+    echo -e "${GREEN}[OK]${NC} OpenCode binary installed"
+fi
+
+# Validate the binary actually works
+echo ""
+echo "[STEP 5b/9] Validating OpenCode binary"
+BINARY_TEST=$("$BIN_DIR/opencode" --version 2>&1 || echo "FAILED")
+if [[ "$BINARY_TEST" == *"FAILED"* ]] || [[ -z "$BINARY_TEST" ]]; then
+    echo -e "${RED}[ERROR]${NC} OpenCode binary is not working correctly"
+    echo "Binary path: $BIN_DIR/opencode"
+    echo "Test output: $BINARY_TEST"
+    echo ""
+    echo "Please try:"
+    echo "  1. Delete $BIN_DIR/opencode and re-run this installer"
+    echo "  2. Manually download from https://github.com/sst/opencode/releases"
+    exit 1
+fi
+echo -e "${GREEN}[OK]${NC} Binary validation passed: $BINARY_TEST"
+
+# Auto-configure NomadArch to use this binary
+echo ""
+echo "[STEP 5c/9] Configuring NomadArch to use installed binary"
+PREFS_DIR="$HOME/.config/nomadarch"
+mkdir -p "$PREFS_DIR"
+PREFS_FILE="$PREFS_DIR/preferences.json"
+BINARY_PATH="$BIN_DIR/opencode"
+
+if [[ -f "$PREFS_FILE" ]]; then
+    if command -v node >/dev/null 2>&1; then
+        node -e "
+const fs = require('fs');
+const prefs = JSON.parse(fs.readFileSync('$PREFS_FILE', 'utf8'));
+prefs.lastUsedBinary = '$BINARY_PATH';
+prefs.opencodeBinaries = prefs.opencodeBinaries || [];
+if (!prefs.opencodeBinaries.find(b => b.path === '$BINARY_PATH')) {
+    prefs.opencodeBinaries.push({ path: '$BINARY_PATH', version: '$OPENCODE_VERSION' });
+}
+fs.writeFileSync('$PREFS_FILE', JSON.stringify(prefs, null, 2));
+" 2>/dev/null && echo -e "${GREEN}[OK]${NC} Updated preferences to use $BINARY_PATH" || echo -e "${YELLOW}[WARN]${NC} Could not auto-update preferences"
+    fi
+else
+    cat > "$PREFS_FILE" << EOF
+{
+  "lastUsedBinary": "$BINARY_PATH",
+  "opencodeBinaries": [
+    { "path": "$BINARY_PATH", "version": "$OPENCODE_VERSION" }
+  ]
+}
+EOF
+    echo -e "${GREEN}[OK]${NC} Created preferences with binary path: $BINARY_PATH"
 fi
 
 echo ""

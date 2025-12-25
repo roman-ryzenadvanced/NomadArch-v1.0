@@ -28,11 +28,11 @@ interface ManagedProcess {
 export class WorkspaceRuntime {
   private processes = new Map<string, ManagedProcess>()
 
-  constructor(private readonly eventBus: EventBus, private readonly logger: Logger) {}
+  constructor(private readonly eventBus: EventBus, private readonly logger: Logger) { }
 
   async launch(options: LaunchOptions): Promise<{ pid: number; port: number; exitPromise: Promise<ProcessExitInfo>; getLastOutput: () => string }> {
     this.validateFolder(options.folder)
-    
+
     // Check if binary exists before attempting to launch
     try {
       accessSync(options.binaryPath, constants.F_OK)
@@ -41,8 +41,8 @@ export class WorkspaceRuntime {
     }
 
     const args = ["serve", "--port", "0", "--print-logs", "--log-level", "DEBUG"]
-    const env = { 
-      ...process.env, 
+    const env = {
+      ...process.env,
       ...(options.environment ?? {}),
       "OPENCODE_SERVER_HOST": "127.0.0.1",
       "OPENCODE_SERVER_PORT": "0",
@@ -58,7 +58,23 @@ export class WorkspaceRuntime {
     const exitPromise = new Promise<ProcessExitInfo>((resolveExit) => {
       exitResolve = resolveExit
     })
-    let lastOutput = ""
+
+    // Store recent output for debugging - keep last 20 lines from each stream
+    const MAX_OUTPUT_LINES = 20
+    const recentStdout: string[] = []
+    const recentStderr: string[] = []
+    const getLastOutput = () => {
+      const combined: string[] = []
+      if (recentStderr.length > 0) {
+        combined.push("=== STDERR ===")
+        combined.push(...recentStderr.slice(-10))
+      }
+      if (recentStdout.length > 0) {
+        combined.push("=== STDOUT ===")
+        combined.push(...recentStdout.slice(-10))
+      }
+      return combined.join("\n")
+    }
 
     return new Promise((resolve, reject) => {
       this.logger.info(
@@ -149,23 +165,28 @@ export class WorkspaceRuntime {
         for (const line of lines) {
           const trimmed = line.trim()
           if (!trimmed) continue
-          lastOutput = trimmed
+
+          // Store in recent buffer for debugging
+          recentStdout.push(trimmed)
+          if (recentStdout.length > MAX_OUTPUT_LINES) {
+            recentStdout.shift()
+          }
+
           this.emitLog(options.workspaceId, "info", line)
 
           if (!portFound) {
             this.logger.debug({ workspaceId: options.workspaceId, line: trimmed }, "OpenCode output line")
             // Try multiple patterns for port detection
             const portMatch = line.match(/opencode server listening on http:\/\/.+:(\d+)/i) ||
-                             line.match(/server listening on http:\/\/.+:(\d+)/i) ||
-                             line.match(/listening on http:\/\/.+:(\d+)/i) ||
-                             line.match(/:(\d+)/i)
-                             
+              line.match(/server listening on http:\/\/.+:(\d+)/i) ||
+              line.match(/listening on http:\/\/.+:(\d+)/i) ||
+              line.match(/:(\d+)/i)
+
             if (portMatch) {
               portFound = true
               child.removeListener("error", handleError)
               const port = parseInt(portMatch[1], 10)
               this.logger.info({ workspaceId: options.workspaceId, port, matchedLine: trimmed }, "Workspace runtime allocated port - PORT DETECTED")
-              const getLastOutput = () => lastOutput.trim()
               resolve({ pid: child.pid!, port, exitPromise, getLastOutput })
             } else {
               this.logger.debug({ workspaceId: options.workspaceId, line: trimmed }, "Port detection - no match in this line")
@@ -183,7 +204,13 @@ export class WorkspaceRuntime {
         for (const line of lines) {
           const trimmed = line.trim()
           if (!trimmed) continue
-          lastOutput = `[stderr] ${trimmed}`
+
+          // Store in recent buffer for debugging
+          recentStderr.push(trimmed)
+          if (recentStderr.length > MAX_OUTPUT_LINES) {
+            recentStderr.shift()
+          }
+
           this.emitLog(options.workspaceId, "error", line)
         }
       })
