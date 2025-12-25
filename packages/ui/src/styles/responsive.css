@@ -1,0 +1,191 @@
+/* Responsive Design for Electron Interface */
+
+/* Base container adjustments for small screens */
+@media (max-width: 640px) {
+  .session-shell-panels {
+    overflow: hidden;
+  }
+
+  .session-toolbar {
+    padding: 0.25rem 0.5rem;
+    min-height: 36px;
+  }
+
+  .session-toolbar button,
+  .session-toolbar .icon-button {
+    padding: 0.25rem;
+  }
+
+  .session-toolbar .hidden.md\:flex {
+    display: none !important;
+  }
+
+  .content-area {
+    min-width: 0;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .session-toolbar {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .content-area {
+    min-width: 0;
+  }
+}
+
+/* Desktop adjustments */
+@media (min-width: 1025px) {
+  .content-area {
+    min-width: 0;
+  }
+}
+
+/* Ensure all scrollable containers handle overflow properly */
+@media (max-width: 768px) {
+  .flex-1.min-h-0 {
+    min-height: 0;
+    flex: 1 1 0%;
+  }
+
+  .overflow-y-auto {
+    overflow-y: auto;
+  }
+
+  .min-h-0 {
+    min-height: 0;
+  }
+}
+
+/* Fix drawer widths on mobile */
+@media (max-width: 768px) {
+
+  .session-sidebar-container,
+  .session-right-panel {
+    max-width: 100vw !important;
+  }
+}
+
+/* Chat panel adjustments for small screens */
+@media (max-width: 640px) {
+  .flex.flex-col.relative.border-l {
+    min-width: 280px !important;
+  }
+}
+
+/* Terminal adjustments */
+@media (max-width: 768px) {
+  .terminal-panel {
+    min-height: 100px !important;
+    max-height: 40vh !important;
+  }
+}
+
+/* Prevent horizontal scroll on root levels only */
+html,
+body,
+#root {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+
+/* Ensure proper flex sizing throughout the app */
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.min-h-0 {
+  min-height: 0;
+}
+
+/* Ensure scrollable containers work correctly */
+.overflow-y-auto {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Ensure viewport meta tag behavior */
+@viewport {
+  width: device-width;
+  zoom: 1.0;
+}
+
+/* Touch-friendly adjustments for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .session-resize-handle {
+    width: 16px;
+  }
+
+  .message-scroll-button {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+/* High DPI adjustments */
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+
+  /* Enhance text rendering on high-dpi screens */
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Ensure the main app container is fully adaptive */
+.app-container,
+[data-app-container="true"],
+#root>div {
+  width: 100%;
+  height: 100%;
+  max-width: 100vw;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* Fix message navigation sidebar from being cut off */
+.message-navigation-sidebar,
+[class*="message-nav"],
+.shrink-0.overflow-y-auto.border-l {
+  min-width: 28px;
+  max-width: 48px;
+  flex-shrink: 0;
+  overflow-x: hidden;
+}
+
+/* Ensure panels don't overflow their containers */
+.panel,
+[role="main"],
+main {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Fix right-side badges and avatars */
+.message-avatar,
+.message-role-badge,
+[class*="shrink-0"][class*="border-l"] {
+  min-width: min-content;
+  overflow: visible;
+}
+
+/* Ensure proper Electron window behavior */
+@media screen {
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Text rendering optimization */
+body {
+  -webkit-font-smoothing: subpixel-antialiased;
+}

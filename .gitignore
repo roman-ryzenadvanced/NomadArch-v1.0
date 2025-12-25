@@ -1,0 +1,103 @@
+# =====================================================
+# NomadArch - Git Ignore Configuration
+# Clean public repository version
+# =====================================================
+
+# ===================== Dependencies =====================
+node_modules/
+.pnpm-store/
+.yarn/
+
+# ===================== Build Outputs ====================
+dist/
+release/
+out/
+*.bundle.js
+*.bundle.js.map
+
+# ===================== IDE & Editor =====================
+.DS_Store
+.idea/
+*.swp
+*.swo
+.vscode/
+*.code-workspace
+.dir-locals.el
+
+# ===================== Vite / Build Tools ===============
+.vite/
+.electron-vite/
+*.local
+
+# ===================== Logs & Debug =====================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+install.log
+.tmp-*.log
+
+# ===================== OS Generated Files ===============
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===================== Temporary Files ==================
+*.tmp
+*.temp
+.tmp-*/
+.cache/
+*.bak
+
+# ===================== Environment & Secrets ============
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+*.pem
+*.key
+secrets/
+credentials/
+
+# ===================== OpenCode Data ====================
+.opencode/
+!.opencode/.gitignore
+
+# ===================== Session & User Data ==============
+.trae/
+.agent/artifacts/
+.backup/
+.tmp-qwen-code/
+
+# ===================== MCP Config (may contain keys) ===
+# Keep the template but user should configure their own
+# .mcp.json
+
+# ===================== Test Coverage ====================
+coverage/
+.nyc_output/
+
+# ===================== Electron Build ===================
+packages/electron-app/dist/
+packages/electron-app/out/
+packages/electron-app/release/
+
+# ===================== UI Build =========================
+packages/ui/dist/
+packages/ui/renderer/dist/
+
+# ===================== Server Build =====================
+packages/server/dist/
+
+# ===================== Lock files (optional) ============
+# package-lock.json
+# pnpm-lock.yaml
+# yarn.lock
+
+# ===================== Backup Files =====================
+*.backup
+*_backup*
+_backup_original/

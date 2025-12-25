@@ -1,0 +1,38 @@
+@import './styles/tokens.css';
+@import './styles/utilities.css';
+@import './styles/controls.css';
+@import './styles/messaging.css';
+@import './styles/panels.css';
+@import './styles/markdown.css';
+@import './styles/tabs.css';
+@import './styles/antigravity.css';
+@import './styles/responsive.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-regular);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--surface-base);
+  color: var(--text-primary);
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+}

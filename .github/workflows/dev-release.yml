@@ -1,0 +1,16 @@
+name: Dev Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  dev-release:
+    uses: ./.github/workflows/reusable-release.yml
+    with:
+      version_suffix: -dev
+      dist_tag: dev
+    secrets: inherit

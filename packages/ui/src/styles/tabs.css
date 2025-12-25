@@ -1,0 +1,120 @@
+/* Tab styles for advanced settings modal */
+.tab-trigger {
+  @apply px-4 py-2 text-sm font-medium border-b-2 border-transparent hover:border-gray-300 
+         data-[state=active]:border-blue-500 data-[state=active]:text-blue-600 
+         dark:data-[state=active]:text-blue-400 dark:hover:border-gray-600
+         transition-colors cursor-pointer;
+}
+
+/* Additional styles for Ollama and Qwen settings */
+.integration-header {
+  @apply flex items-center gap-2 mb-4;
+}
+
+.integration-icon {
+  @apply w-6 h-6;
+}
+
+.status-indicator {
+  @apply flex items-center gap-2;
+}
+
+.connection-status {
+  @apply text-sm font-medium;
+}
+
+.connected {
+  @apply text-green-600 dark:text-green-400;
+}
+
+.failed {
+  @apply text-red-600 dark:text-red-400;
+}
+
+.testing {
+  @apply text-blue-600 dark:text-blue-400;
+}
+
+.model-grid {
+  @apply grid grid-cols-1 gap-2;
+}
+
+.model-item {
+  @apply p-3 border border-gray-200 rounded-md bg-gray-50 dark:border-gray-700 dark:bg-gray-800;
+}
+
+.model-name {
+  @apply text-sm font-mono;
+}
+
+.auth-status {
+  @apply text-center py-8;
+}
+
+.auth-icon {
+  @apply w-12 h-12 mx-auto text-gray-400;
+}
+
+.user-profile {
+  @apply flex items-start justify-between;
+}
+
+.user-info {
+  @apply flex items-center gap-3;
+}
+
+.user-avatar {
+  @apply w-12 h-12 bg-green-100 dark:bg-green-800 rounded-full flex items-center justify-center;
+}
+
+.user-details {
+  @apply space-y-1;
+}
+
+.user-name {
+  @apply font-semibold text-green-900 dark:text-green-100;
+}
+
+.user-email {
+  @apply text-sm text-green-700 dark:text-green-300;
+}
+
+.user-tier {
+  @apply text-xs px-2 py-1 bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 rounded-full;
+}
+
+.user-limits {
+  @apply text-xs text-green-600 dark:text-green-400;
+}
+
+.feature-grid {
+  @apply grid grid-cols-1 gap-3;
+}
+
+.feature-item {
+  @apply p-3 border border-gray-200 dark:border-gray-700 rounded-md;
+}
+
+.feature-title {
+  @apply font-medium text-sm;
+}
+
+.feature-description {
+  @apply text-xs text-gray-600 dark:text-gray-400 mt-1;
+}
+
+.usage-tips {
+  @apply bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4;
+}
+
+.usage-tips h3 {
+  @apply font-semibold text-blue-900 dark:text-blue-100 mb-2;
+}
+
+.usage-tips ul {
+  @apply text-sm text-blue-800 dark:text-blue-200 space-y-1;
+}
+
+.usage-tips code {
+  @apply bg-blue-100 dark:bg-blue-800 px-1 rounded;
+}

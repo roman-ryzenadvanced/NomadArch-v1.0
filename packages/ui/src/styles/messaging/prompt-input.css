@@ -1,0 +1,262 @@
+/* Prompt input & attachment styles */
+.prompt-input-container {
+  @apply flex flex-col relative mx-auto w-full max-w-4xl flex-shrink-0;
+  padding: 1rem 1.5rem 1.5rem;
+  background-color: transparent;
+}
+
+.prompt-input-wrapper {
+  @apply relative flex flex-col glass rounded-2xl border border-white/10 shadow-2xl transition-all;
+  background-color: rgba(10, 10, 10, 0.7);
+  padding: 0.25rem;
+}
+
+.prompt-input-wrapper:focus-within {
+  @apply border-blue-500/40 shadow-blue-500/10;
+  background-color: rgba(10, 10, 10, 0.85);
+  transform: translateY(-1px);
+}
+
+.prompt-input-field-container {
+  @apply flex flex-1 min-h-[40px] relative;
+}
+
+.prompt-input {
+  @apply w-full pl-10 pr-24 py-3 bg-transparent border-none text-[13px] resize-none outline-none text-zinc-100;
+  font-family: inherit;
+  line-height: 1.6;
+  min-height: 48px;
+}
+
+.prompt-input-actions {
+  @apply absolute right-2 bottom-2 flex items-center space-x-1.5 z-20;
+}
+
+.thinking-indicator {
+  @apply flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wide;
+  border: 1px solid rgba(129, 140, 248, 0.4);
+  background-color: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+}
+
+.thinking-spinner {
+  @apply w-3 h-3 border-2 border-t-transparent rounded-full;
+  border-color: rgba(129, 140, 248, 0.4);
+  border-top-color: #a5b4fc;
+  animation: spin 0.9s linear infinite;
+}
+
+.send-button, .stop-button {
+  @apply w-8 h-8 rounded-xl border-none cursor-pointer flex items-center justify-center transition-all flex-shrink-0 shadow-lg;
+}
+
+.prompt-input-overlay {
+  @apply absolute bottom-3 left-10 right-24 flex flex-wrap gap-2 text-[10px] text-zinc-500 pointer-events-none z-10 opacity-60;
+}
+
+.prompt-input-overlay.shell-mode {
+  color: var(--text-primary);
+}
+
+.prompt-history-top,
+.prompt-history-bottom {
+  position: absolute;
+  left: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.prompt-history-top {
+  top: 0.3rem;
+}
+
+.prompt-history-bottom {
+  bottom: 0.6rem;
+}
+
+.prompt-history-button {
+  @apply w-7 h-7 flex items-center justify-center rounded-lg;
+  color: var(--text-muted);
+  background-color: transparent;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.prompt-history-button:hover:not(:disabled) {
+  @apply bg-white/5 text-white scale-105;
+}
+
+.prompt-history-button svg {
+  @apply w-4 h-4;
+}
+
+.prompt-overlay-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.prompt-overlay-warning {
+  color: var(--status-warning);
+  font-weight: 500;
+}
+
+.prompt-overlay-shell-active {
+  color: var(--status-success);
+  font-weight: 600;
+}
+
+.prompt-overlay-muted {
+  color: var(--text-muted);
+}
+
+.prompt-input.shell-mode {
+  border-color: var(--status-success);
+  box-shadow: inset 0 0 0 1px rgba(76, 175, 80, 0.4);
+}
+
+.prompt-input:focus {
+  border-color: var(--accent-primary);
+}
+
+.prompt-input.shell-mode:focus {
+  border-color: var(--status-success);
+  box-shadow: inset 0 0 0 1px rgba(76, 175, 80, 0.4);
+}
+
+.prompt-input:disabled {
+  @apply opacity-60 cursor-not-allowed;
+}
+
+.prompt-input::placeholder {
+  color: var(--text-muted);
+}
+
+.stop-button {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.stop-button:hover:not(:disabled) {
+  background-color: rgba(239, 68, 68, 0.3);
+  @apply scale-105;
+}
+
+.send-button {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.send-button:hover:not(:disabled) {
+  background-color: rgba(59, 130, 246, 0.3);
+  @apply scale-105;
+}
+
+.send-button.shell-mode {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.send-icon {
+  @apply text-base;
+}
+
+.shell-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+
+.hint {
+  @apply text-xs;
+  color: var(--text-muted);
+}
+
+.hint kbd {
+  @apply inline-block px-1.5 py-0.5 text-xs font-mono rounded mx-0.5;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-base);
+  border-radius: 3px;
+}
+
+.attachment-chip {
+  @apply px-2.5 py-1 text-xs font-medium ring-1 ring-inset;
+  background-color: var(--attachment-chip-bg);
+  color: var(--attachment-chip-text);
+  ring-color: var(--attachment-chip-ring);
+}
+
+.attachment-chip-image {
+  position: relative;
+}
+
+.attachment-chip-preview {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  padding: 8px;
+  background-color: var(--surface-base);
+  border: 1px solid var(--border-base);
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
+  z-index: 20;
+}
+
+.attachment-chip-preview img {
+  display: block;
+  max-width: 320px;
+  max-height: 320px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.attachment-chip-image:hover .attachment-chip-preview {
+  display: block;
+}
+
+.attachment-remove,
+.attachment-download,
+.attachment-expand {
+  @apply ml-0.5 flex h-4 w-4 items-center justify-center rounded transition-colors;
+}
+
+.attachment-remove:hover,
+.attachment-download:hover,
+.attachment-expand:hover {
+  background-color: var(--attachment-chip-ring);
+}
+
+@media (pointer: coarse) {
+  .prompt-input-overlay {
+    display: none;
+  }
+
+  .prompt-input {
+    padding-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .prompt-input-wrapper {
+    grid-template-columns: minmax(0, 1fr) 40px;
+  }
+}
+
+@media (max-width: 640px) {
+  .prompt-input {
+    min-height: 64px;
+    padding: 0.5rem 0.75rem;
+    padding-bottom: 2.25rem;
+  }
+
+  .prompt-input-wrapper {
+    gap: 0;
+    padding: 0;
+  }
+}
