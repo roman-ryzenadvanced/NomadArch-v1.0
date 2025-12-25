@@ -7,7 +7,7 @@
 <h3 align="center">Advanced AI Coding Workspace</h3>
 
 <p align="center">
-  <em>A powerful fork of CodeNomad by OpenCode — now with GLM 4.7, multi-model support, and MULTIX Mode</em>
+  <em>Fork by CodeNomad — now with GLM 4.7, multi-model support, and MULTIX Mode</em>
 </p>
 
 <p align="center">
@@ -331,5 +331,5 @@ This project is a fork of [CodeNomad by OpenCode](https://github.com/opencode/co
 </p>
 
 <p align="center">
-  <sub>Forked from <a href="https://github.com/opencode/codenom">CodeNomad by OpenCode</a></sub>
+  <sub>Fork by CodeNomad</sub>
 </p>
