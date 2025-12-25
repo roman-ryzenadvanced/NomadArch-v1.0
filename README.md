@@ -7,7 +7,7 @@
 <h3 align="center">Advanced AI Coding Workspace</h3>
 
 <p align="center">
-  <em>Fork by CodeNomad — now with GLM 4.7, multi-model support, and MULTIX Mode</em>
+  <em>NomadArch is an enhanced fork of CodeNomad — now with GLM 4.7, multi-model support, and MULTIX Mode</em>
 </p>
 
 <p align="center">
@@ -331,5 +331,5 @@ This project is a fork of [CodeNomad](https://github.com/opencode/codenom).
 </p>
 
 <p align="center">
-  <sub>Fork by CodeNomad</sub>
+  <sub>NomadArch is an enhanced fork of CodeNomad</sub>
 </p>
