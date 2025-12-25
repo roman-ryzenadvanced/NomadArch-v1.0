@@ -295,7 +295,7 @@ const FolderSelectionView: Component<FolderSelectionViewProps> = (props) => {
               <img src={nomadArchLogo} alt="NomadArch logo" class="h-32 w-auto sm:h-48" loading="lazy" />
             </div>
             <h1 class="mb-2 text-3xl font-semibold text-primary">NomadArch</h1>
-            <p class="text-xs text-muted mb-1">Forked from OpenCode</p>
+            <p class="text-xs text-muted mb-1">An enhanced fork of CodeNomad</p>
             <Show when={activeUser()}>
               {(user) => (
                 <p class="text-xs text-muted mb-1">
