@@ -41,7 +41,7 @@
 
 ## 🎯 Overview
 
-**NomadArch** is an enhanced fork of CodeNomad by OpenCode, featuring significant UI/UX improvements, additional AI integrations, and a more robust architecture. This is a full-featured AI coding assistant with support for multiple AI providers including **GLM 4.7**, Anthropic, OpenAI, Google, Qwen, and local models via Ollama.
+**NomadArch** is an enhanced fork of CodeNomad, featuring significant UI/UX improvements, additional AI integrations, and a more robust architecture. This is a full-featured AI coding assistant with support for multiple AI providers including **GLM 4.7**, Anthropic, OpenAI, Google, Qwen, and local models via Ollama.
 
 ### ✨ Key Improvements Over CodeNomad
 - 🔧 Fixed Qwen OAuth authentication flow
@@ -322,7 +322,7 @@ Built with amazing open source projects:
 
 ## 📄 License
 
-This project is a fork of [CodeNomad by OpenCode](https://github.com/opencode/codenom).
+This project is a fork of [CodeNomad](https://github.com/opencode/codenom).
 
 ---
 
